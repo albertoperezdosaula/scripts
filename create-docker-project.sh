@@ -46,7 +46,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
     # Git clone
     git clone https://github.com/albertoperezdosaula/easy-docker-drupal ${PROJECT_NAME}
     cd ${PROJECT_NAME}
-    sh ./scripts/initialize.sh ${PROJECT_NAME}
+    source ./scripts/initialize.sh ${PROJECT_NAME}
   fi
 
   printf "${GREEN}[OK] Installation completed succesfully!${NC}"
