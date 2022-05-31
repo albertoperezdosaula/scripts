@@ -13,12 +13,13 @@ if [ ! -d "/etc/docker" ]
     printf '\n'
   exit 1
 fi
-  
-read -p "Add DNS to a new daemon.json file: " DNS
-export DNS
+
+printf "Add DNS to a new daemon.json [8.8.8.8]:"
+read DNS_INPUT
+DNS=${DNS_INPUT:=8.8.8.8}
 
 sudo bash -c "echo { >> /etc/docker/daemon.json"
-sudo bash -c "echo '  dns': ['${DNS}'] >> /etc/docker/daemon.json"
+sudo bash -c "echo '  \"dns\": [\"${DNS}\"]' >> /etc/docker/daemon.json"
 sudo bash -c "echo } >> /etc/docker/daemon.json"
 
-service docker restart
+sudo service docker restart
