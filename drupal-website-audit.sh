@@ -777,9 +777,13 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf '\n'
         printf "${YELLOW} REV-DRUPAL-37 [SEMIAUTOMÁTICO]:${NC}"
         printf '\n'
-        printf " Comprobando si Simple styleguide está instalado:"
+        printf " Comprobando si Simple Styleguide está instalado:"
         printf '\n'
         vendor/bin/drush pm:list --type=module --status=enabled | grep simple_styleguide
+        printf '\n'
+        printf " Comprobando si Styleguide está instalado:"
+        printf '\n'
+        vendor/bin/drush pm:list --type=module --status=enabled | grep styleguide
         printf '\n'
         printf '\n'
 
