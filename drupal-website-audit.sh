@@ -611,7 +611,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf '\n'
         vendor/bin/drush pm:list --type=module --status=enabled | grep memcache
         printf '\n'
-        printf "CDN: "
+        printf " CDN: "
         curl --head --silent ${PROJECT_PRO_URL} >> curl.txt
         if [[ ! -z $(grep "X-Cache" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
