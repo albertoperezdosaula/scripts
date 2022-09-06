@@ -69,7 +69,7 @@ script_configuration() {
     printf "${RED}[KO]${NC}"
     printf "\n\n"
     rm report-drush-check.txt
-    #exit 1;
+    exit 1;
   else
     printf "${GREEN}[OK]${NC}"
     printf "\n\n"
