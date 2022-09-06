@@ -86,7 +86,7 @@ script_configuration() {
   printf '\n'
   # Url.
   printf " ${BLUE}URL de PRO/VAL:${NC}"
-  read -p " Indíquelo con http/https y sin slash final (por ejemplo: http://www.google.es): " PROJECT_PRO_URL
+  read -p " Indíquelo con http/https y sin slash final (Por ejemplo: http://www.google.es): " PROJECT_PRO_URL
   export PROJECT_PRO_URL
   if [[ "${PROJECT_PRO_URL}" == "" ]]; then
     printf " ${RED}URL de PRO/VAL es requerida!${NC}\n"
@@ -95,7 +95,7 @@ script_configuration() {
   printf '\n'
   # Url local.
   printf " ${BLUE}URL de LOCAL:${NC}"
-  read -p " Indíquelo con http/https y sin slash final (por ejemplo: http://google.vm): " PROJECT_LOCAL_URL
+  read -p " Indíquelo con http/https y sin slash final (Por ejemplo: http://google.vm): " PROJECT_LOCAL_URL
   export PROJECT_LOCAL_URL
   if [[ "${PROJECT_LOCAL_URL}" == "" ]]; then
     printf " ${RED}URL de LOCAL es requerida!${NC}\n"
@@ -104,7 +104,7 @@ script_configuration() {
   printf '\n'
   # Url Jenkins.
   printf " ${BLUE}URL de JENKINS:${NC}"
-  read -p " Indíquelo con http/https y sin slash final (por ejemplo: http://jenkins.ci.google): " JENKINSURL
+  read -p " Indíquelo con http/https y sin slash final (Por ejemplo: http://jenkins.ci.google): " JENKINSURL
   export JENKINSURL
   if [[ "${JENKINSURL}" == "" ]]; then
     printf " ${RED}URL de JENKINS es requerida!${NC}\n"
@@ -113,7 +113,7 @@ script_configuration() {
   printf '\n'
   printf " ${BLUE}CONTENIDO OBSOLETO:${NC}"
   # Obsolete content (Determine the year to clasify obsolete content).
-  read -p " Indique a partir de que año se considera obsoleto en contenido de Drupal (por ejemplo: 2018): " CONTENTOBS
+  read -p " Indique a partir de que año se considera obsoleto en contenido de Drupal (Por ejemplo: 2018): " CONTENTOBS
   export CONTENTOBS
   if [[ "${CONTENTOBS}" == "" ]]; then
     printf " ${RED}El año es requerido!${NC}\n"
@@ -142,7 +142,17 @@ exit_script() {
   mv report-rev-composer.json.bak composer.json
   mv report-rev-composer.lock.bak composer.lock
   # Uninstall modules in case was already enabled.
-  # @TODO
+  # @TODO - Check if security review and upgrade status was already enabled.
+  printf " ${BLUE}Restaurando composer...${NC}"
+  vendor/bin/drush pmu security_review -y 2>/dev/null
+  vendor/bin/drush pmu upgrade_status -y 2>/dev/null
+  composer install --no-interaction -q
+  printf "${GREEN}[OK]${NC}"
+  printf "\n\n"
+  printf " ${BLUE}Limpiando caches...${NC}"
+  vendor/bin/drush cr 2>/dev/null
+  printf "${GREEN}[OK]${NC}"
+  printf "\n\n"
   if [[ -z "$1" ]]; then
     ELAPSED="$(($SECONDS / 3600))hrs $((($SECONDS / 60) % 60))min $(($SECONDS % 60))sec"
     printf " ${GREEN}[EJECUCIÓN FINALIZADA - Tiempo  de ejecución: $ELAPSED]${NC}"
@@ -303,9 +313,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-12 [SEMIAUTOMÁTICO]:${NC}\n"
+        printf " ${BLUE}Instalando y activando security_review...${NC}\n\n"
         composer require drupal/security_review --no-interaction -q
-        vendor/bin/drush en security_review -y -q 2>/dev/null
-        vendor/bin/drush secrev --results 2>/dev/null
+        vendor/bin/drush en security_review -y 2>/dev/null
+        vendor/bin/drush cr 2>/dev/null
+        printf " A continuación se van a mostrar los siguientes reportes con security_review:\n"
+        vendor/bin/drush secrev --skip=query_errors --results 2>/dev/null
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-13 [AUTOMÁTICO]:${NC}\n"
@@ -381,7 +394,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-17 [MANUAL]:${NC}\n"
-        printf " Acceda a la página web ${PROJECT_PRO_URL} y navega en busca de algún formulario para comprobar >/dev/nulllos campos.\n\n"
+        printf " Acceda a la página web ${PROJECT_PRO_URL} y navega en busca de algún formulario para comprobar los campos.\n\n"
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-18 [MANUAL]:${NC}\n"
@@ -486,6 +499,8 @@ if [[ ("${RESPOND}" == "y") ]]; then
         else
           printf "${RED}[KO]${NC}"
         fi
+        printf "\n"
+        printf " Actualmente está configurado en: $CACHE"
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-25 [SEMIAUTOMÁTICO]:${NC}\n"
@@ -541,9 +556,11 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-30 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf " Se han encontrado las siguientes funciones deprecadas en los módulos custom:\n"
-        composer require drupal/upgrade_status --no-interaction -q
+        printf " ${BLUE}Instalando y activando upgrade_status...${NC}\n\n"
+        composer require drupal/upgrade_status:^3.1 -W --no-interaction -q
         vendor/bin/drush en upgrade_status -y 2>/dev/null
+        vendor/bin/drush cr 2>/dev/null
+        printf " A continuación se van a mostrar las siguientes funciones deprecadas en los módulos custom:\n"
         vendor/bin/drush us-a --all --ignore-contrib --skip-existing 2>/dev/null > report-rev-drupal-30.txt
         cat report-rev-drupal-30.txt | awk 'NR<=30'
         printf '\n\n'
