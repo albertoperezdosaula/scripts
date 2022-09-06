@@ -69,7 +69,7 @@ script_configuration() {
     printf "${RED}[KO]${NC}"
     printf "\n\n"
     rm report-drush-check.txt
-    exit 1;
+    #exit 1;
   else
     printf "${GREEN}[OK]${NC}"
     printf "\n\n"
@@ -132,6 +132,7 @@ script_configuration() {
   composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
   composer config --no-plugins allow-plugins.drupal/console-extend-plugin true
   composer config --no-plugins allow-plugins.drupal/core-composer-scaffold true
+  SECONDS=0
 }
 
 exit_script() {
@@ -143,7 +144,8 @@ exit_script() {
   # Uninstall modules in case was already enabled.
   # @TODO
   if [[ -z "$1" ]]; then
-    printf " ${GREEN}[EJECUCIÓN FINALIZADA]${NC}"
+    ELAPSED="$(($SECONDS / 3600))hrs $((($SECONDS / 60) % 60))min $(($SECONDS % 60))sec"
+    printf " ${GREEN}[EJECUCIÓN FINALIZADA - Tiempo  de ejecución: $ELAPSED]${NC}"
   else
     printf " ${RED}[EJECUCIÓN CANCELADA]${NC}"
   fi
