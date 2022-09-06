@@ -54,12 +54,27 @@ if [[ "${PACKAGES_INSTALLED}" < 1 ]]; then
 fi
 printf "${YELLOW}----------------------------------------------------------------------------${NC}\n\n"
 
+MODULES_CUSTOM_FOLDER='web/modules/custom'
+
 ################################################################################
 ################################ SCRIPT FUNCTIONS ##############################
 ################################################################################
 script_configuration() {
   printf "\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
   printf "${YELLOW} CONFIGURACIÓN PREVIA DEL SCRIPT DE AUDITORÍA:${NC}\n\n"
+  # Check if drush is working correctly.
+  printf " ${BLUE}Comprobando si Drush funciona correctamente...${NC}: "
+  vendor/bin/drush status 2>/dev/null > report-drush-check.txt
+  if [[ ! -z $(grep -i "TypeError" "report-drush-check.txt") ]]; then
+    printf "${RED}[KO]${NC}"
+    printf "\n\n"
+    rm report-drush-check.txt
+    exit 1;
+  else
+    printf "${GREEN}[OK]${NC}"
+    printf "\n\n"
+    rm report-drush-check.txt
+  fi
   # Project name.
   printf " ${BLUE}NOMBRE PROYECTO:${NC}"
   read -p " En minúsculas y sin espacios, DEBE coincidir con la carpeta raiz de Drupal: " PROJECT_NAME
@@ -107,18 +122,32 @@ script_configuration() {
   # Workdir
   WORKDIR="/opt/drupal/web/${PROJECT_NAME}"
   cd ${WORKDIR}
-  WORKROOT=$(vendor/bin/drush core-status --field=root)
-  WORKDIR_CONFIG="${WORKROOT}/$(vendor/bin/drush core-status --field=config-sync)"
+  WORKROOT=$(vendor/bin/drush core-status --field=root 2>/dev/null)
+  WORKDIR_CONFIG="${WORKROOT}/$(vendor/bin/drush core-status --field=config-sync 2>/dev/null)"
+  # Composer allow plugins
+  cp composer.json report-rev-composer.json.bak
+  cp composer.lock report-rev-composer.lock.bak
+  composer config --no-plugins allow-plugins.composer/installers true
+  composer config --no-plugins allow-plugins.cweagans/composer-patches true
+  composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+  composer config --no-plugins allow-plugins.drupal/console-extend-plugin true
+  composer config --no-plugins allow-plugins.drupal/core-composer-scaffold true
 }
 
 exit_script() {
+  # Restores
+  rm -rf composer.json
+  rm -rf composer.lock
+  mv report-rev-composer.json.bak composer.json
+  mv report-rev-composer.lock.bak composer.lock
+  # Uninstall modules in case was already enabled.
+  # @TODO
   if [[ -z "$1" ]]; then
     printf " ${GREEN}[EJECUCIÓN FINALIZADA]${NC}"
   else
     printf " ${RED}[EJECUCIÓN CANCELADA]${NC}"
   fi
-  printf '\n'
-  printf '\n'
+  printf '\n\n'
   exit;
 }
 
@@ -141,7 +170,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         echo -e "${YELLOW}#######################################################################################${NC}\n"
 
         printf "${YELLOW} REV-DRUPAL-01 [AUTOMÁTICO]:${NC}\n"
-        PROJECT_CURRENT_DRUPAL_VERSION=$(vendor/bin/drush core-status --field=drupal-version)
+        PROJECT_CURRENT_DRUPAL_VERSION=$(vendor/bin/drush core-status --field=drupal-version 2>/dev/null)
         printf " La ultima version de Drupal debería ser: ${PROJECT_LAST_DRUPAL_VERSION} sin embargo tenemos la: ${PROJECT_CURRENT_DRUPAL_VERSION}: "
         if [[ ${PROJECT_LAST_DRUPAL_VERSION} == ${PROJECT_CURRENT_DRUPAL_VERSION} ]]; then
           printf "${GREEN}[OK]${NC}"
@@ -152,7 +181,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-02 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Comprobar que los módulos contribuidos están soportados, se encuentran en su última versión estable y no están pendientes de actualizaciones de seguridad críticas para el entorno.\n"
-        composer outdated 'drupal/*'
+        composer outdated 'drupal/*' --no-interaction
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-03 [AUTOMÁTICO]:${NC}\n"
@@ -170,7 +199,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-04 [MANUAL]:${NC}\n"
-        drush user-create ntt_test --mail="ntt_test123@nttdata.com" --password="ntt_test123"
+        drush user-create ntt_test --mail="ntt_test123@nttdata.com" --password="ntt_test123" 2>/dev/null
         printf " Se ha creado el usuario: ntt_test (ntt_test123@nttdata.com) con password ntt_test123 sin roles asignados. Por favor, acceda a edición para intentar bloquear el usuario. Posteriormente borrelo."
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
@@ -266,12 +295,14 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf " * Comprobar si en el servicio, se pasan datos sensibles sin encriptar.\n"
         printf " * Comprobar que cuando se trate de un servicio que guarda datos en Drupal, se haga en dos fases, una para recibir un ACCESS_TOKEN y otra para realizar el proceso.\n"
         printf " * Si el servicio trae X cantidad de datos que tienen que importarse en Drupal. El servicio debería contar con un sistema que identifique cuales ya estan importados para evitar que aparezcan en el WS.\n"
-        printf " * Si el Webservice esta usando para conectar Curl, comprobar que luego se cierra la conexión.\n"
+        printf " * Si el Webservice esta usando para conectar Curl, comprobar que luego se cierra la conexión.\n\n"
+        printf " A continuación se muestran ficheros que podrían tener servicios WebServices: \n"
+        grep -rl "curl_init\|httpClient\|CURLOPT_SSLCERTPASSWD\|CURLOPT_SSLKEYPASSWD\|CURLOPT_USERPWD\|$.ajax({\|type: 'POST'\|type: 'GET'" ${MODULES_CUSTOM_FOLDER}
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-12 [SEMIAUTOMÁTICO]:${NC}\n"
         composer require drupal/security_review --no-interaction -q
-        vendor/bin/drush en security_review -y -q
+        vendor/bin/drush en security_review -y -q 2>/dev/null
         vendor/bin/drush secrev --results 2>/dev/null
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
@@ -280,7 +311,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
           printf "${RED} PHPCPD no esta installado.${NC} Por favor, para poder ejecutar este test, instale phpcpd previamente.\n"
         else
           printf " El resultado de encontrar Copy&Paste sobre los módulos custom es: "
-          phpcpd web/modules/custom >> copy.txt
+          phpcpd ${MODULES_CUSTOM_FOLDER} >> copy.txt
           if [[ ! -z $(grep -i "No clones" "copy.txt") ]]; then
             printf "${GREEN}[OK]${NC}"
           else
@@ -294,10 +325,10 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-14 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Comprobando si Antibot está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep antibot
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep antibot
         printf '\n'
         printf " Comprobando si Captcha está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep captcha
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep captcha
         printf '\n\n'
         printf " Acceda a la página web ${PROJECT_PRO_URL} y navega en busca de algún formulario para comprobar si existe captcha."
 
@@ -324,8 +355,8 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-16 [SEMIAUTOMÁTICO]:${NC}\n"
-        PRIVATEFOLDER=$(vendor/bin/drush dd private)
-        ROOTFOLDER=$(vendor/bin/drush dd)
+        PRIVATEFOLDER=$(vendor/bin/drush dd private 2>/dev/null)
+        ROOTFOLDER=$(vendor/bin/drush dd 2>/dev/null)
         mkdir -p ${PRIVATEFOLDER}
         touch ${PRIVATEFOLDER}/test.txt && echo prueba > ${PRIVATEFOLDER}/test.txt
         PRIVATEURL=${PRIVATEFOLDER/$ROOTFOLDER/}
@@ -348,7 +379,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-17 [MANUAL]:${NC}\n"
-        printf " Acceda a la página web ${PROJECT_PRO_URL} y navega en busca de algún formulario para comprobar los campos.\n\n"
+        printf " Acceda a la página web ${PROJECT_PRO_URL} y navega en busca de algún formulario para comprobar >/dev/nulllos campos.\n\n"
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-18 [MANUAL]:${NC}\n"
@@ -368,10 +399,10 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-19 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Comprobando si Elastic search está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep elasticsearch_connector
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep elasticsearch_connector
         printf '\n'
         printf " Comprobando Search API Solr está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep search_api_solr
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep search_api_solr
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-20 [AUTOMÁTICO]:${NC}\n"
@@ -402,15 +433,15 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-22 [MANUAL]:${NC}\n"
         printf " El portal cuenta con los siguientes campos. Por favor revisa que no hay campos iguales con distintos nombres en distintas entidades y si se podrían unificar entidades\n\n"
-        NODES=$(vendor/bin/drush eval "print_r(implode(' ', array_keys(\Drupal::service('entity_field.manager')->getFieldMap()['node'])));")
+        NODES=$(vendor/bin/drush eval "print_r(implode(' ', array_keys(\Drupal::service('entity_field.manager')->getFieldMap()['node'])));" 2>/dev/null)
         NODES=(${NODES})
         IFS=$'\n' NODES=($(sort <<<"${NODES[*]}"))
         unset IFS
-        PARAGRAPHS=$(vendor/bin/drush eval "print_r(implode(' ', array_keys(\Drupal::service('entity_field.manager')->getFieldMap()['paragraph'])));")
+        PARAGRAPHS=$(vendor/bin/drush eval "print_r(implode(' ', array_keys(\Drupal::service('entity_field.manager')->getFieldMap()['paragraph'])));" 2>/dev/null)
         PARAGRAPHS=(${PARAGRAPHS})
         IFS=$'\n' PARAGRAPHS=($(sort <<<"${PARAGRAPHS[*]}"))
         unset IFS
-        TAXONOMIES=$(vendor/bin/drush eval "print_r(implode(' ', array_keys(\Drupal::service('entity_field.manager')->getFieldMap()['taxonomy_term'])));")
+        TAXONOMIES=$(vendor/bin/drush eval "print_r(implode(' ', array_keys(\Drupal::service('entity_field.manager')->getFieldMap()['taxonomy_term'])));" 2>/dev/null)
         TAXONOMIES=(${TAXONOMIES})
         IFS=$'\n' TAXONOMIES=($(sort <<<"${TAXONOMIES[*]}"))
         unset IFS
@@ -429,7 +460,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-23 [AUTOMÁTICO]:${NC}\n"
         printf " El CSS debería estar compactado:"
-        AGREGATIONCSS=$(vendor/bin/drush cget system.performance css.preprocess)
+        AGREGATIONCSS=$(vendor/bin/drush cget system.performance css.preprocess 2>/dev/null)
         if [[ ${AGREGATIONCSS} == "'system.performance:css.preprocess': false" ]]; then
           printf "${RED}[KO]${NC}"
         else
@@ -437,7 +468,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         fi
         printf '\n'
         printf " El JS debería estar compactado:"
-        AGREGATIONJS=$(vendor/bin/drush cget system.performance js.preprocess)
+        AGREGATIONJS=$(vendor/bin/drush cget system.performance js.preprocess 2>/dev/null)
         if [[ ${AGREGATIONJS} == "'system.performance:js.preprocess': false" ]]; then
           printf "${RED}[KO]${NC}"
         else
@@ -446,23 +477,23 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-24 [AUTOMÁTICO]:${NC}\n"
-        printf " El caché debería estar habilitado:"
-        CACHE=$(vendor/bin/drush cget system.performance page.cache.max_age)
-        if [[ ${CACHE} == "'system.performance:page.cache.max_age': null" ]]; then
-          printf "${RED}[KO]${NC}"
-        else
+        printf " El caché debería estar habilitado y superior a 1H:"
+        CACHE=$(vendor/bin/drush cget system.performance cache.page.max_age 2>/dev/null | awk '/system.performance:cache.page.max_age/ {print $2}')
+        if [[ ${CACHE} -ge 3600 ]]; then
           printf "${GREEN}[OK]${NC}"
+        else
+          printf "${RED}[KO]${NC}"
         fi
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-25 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Comprobando si Redis está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep redis
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep redis
         printf '\n'
         printf " Comprobando si Memcache está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep memcache
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache
         printf '\n'
-        printf " CDN: "
+        printf " CDN:"
         curl --head --silent ${PROJECT_PRO_URL} >> curl.txt
         if [[ ! -z $(grep -i "X-Cache" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
@@ -478,40 +509,40 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-27 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Se han encontrado los siguientes módulos custom con las siguientes nomenclaturas:\n"
-        find web/modules/custom/. -maxdepth 1 -type d -printf '%f\n'
+        find ${MODULES_CUSTOM_FOLDER}/. -maxdepth 1 -type d -printf '%f\n'
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-28 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Se han encontrado los siguientes módulos custom:\n"
-        find "$(cd web/modules/custom; pwd -P)" -maxdepth 1 -type d
+        find "$(cd $MODULES_CUSTOM_FOLDER; pwd -P)" -maxdepth 1 -type d
         printf '\n'
         printf " Se han encontrado los siguientes módulos custom con readme.md:\n"
-        find "$(cd web/modules/custom; pwd -P)" -maxdepth 2 -iname "readme.md" -type f
+        find "$(cd $MODULES_CUSTOM_FOLDER; pwd -P)" -maxdepth 2 -iname "readme.md" -type f
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-29 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Se han encontrado los siguientes módulos que no deberían estar habilitados en PRO:\n"
         printf "Comprobando si Views UI está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep views_ui
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep views_ui
         printf '\n'
         printf "Comprobando si Webform UI está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep webform_ui
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep webform_ui
         printf '\n'
         printf "Comprobando si Watchdog está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep watchdog
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep watchdog
         printf '\n'
         printf "Comprobando si Page Manager UI está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep page_manager_ui
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep page_manager_ui
         printf '\n'
         printf " Se han encontrado los siguientes módulos contribuidos que estan deshabilitados (Revisar si se podrían eliminar):\n"
-        vendor/bin/drush pm:list --type=module --no-core --status=disabled
+        vendor/bin/drush pm:list --type=module --no-core --status=disabled 2>/dev/null
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-30 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Se han encontrado las siguientes funciones deprecadas en los módulos custom:\n"
         composer require drupal/upgrade_status --no-interaction -q
-        vendor/bin/drush en upgrade_status -y
-        vendor/bin/drush us-a --all --ignore-contrib --skip-existing > report-rev-drupal-30.txt
+        vendor/bin/drush en upgrade_status -y 2>/dev/null
+        vendor/bin/drush us-a --all --ignore-contrib --skip-existing 2>/dev/null > report-rev-drupal-30.txt
         cat report-rev-drupal-30.txt | awk 'NR<=30'
         printf '\n\n'
         printf " Se ha generado un reporte completo en el fichero ${WORKDIR}/report-rev-drupal-30.txt"
@@ -519,7 +550,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-31 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Se han encontrado los siguientes módulos drupal/*, Por favor, comprueba que no existan módulos en versiones Dev:\n"
-        composer show -i 'drupal/*'
+        composer show -i 'drupal/*' --no-interaction
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-32 [SEMIAUTOMÁTICO]:${NC}\n"
@@ -527,7 +558,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
           printf "${RED} PHPCS no esta installado.${NC} Por favor, para poder ejecutar este test, instale phpcs previamente.\n"
         else
           printf " A continuación se detalla el comando phpcs sobre los módulos custom:\n"
-          phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md web/modules/custom > report-rev-drupal-32.txt
+          phpcs --standard=Drupal --extensions=php,module,inc,install,test,profile,theme,css,info,txt,md ${MODULES_CUSTOM_FOLDER} > report-rev-drupal-32.txt
           cat report-rev-drupal-32.txt | awk 'NR<=20'
           printf '\n\n'
           printf " Se ha generado un reporte completo en el fichero ${WORKDIR}/report-rev-drupal-32.txt"
@@ -536,10 +567,10 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-33 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Se han encontrado los siguientes módulos custom:\n"
-        find "$(cd web/modules/custom; pwd -P)" -maxdepth 1 -type d
+        find "$(cd $MODULES_CUSTOM_FOLDER; pwd -P)" -maxdepth 1 -type d
         printf '\n'
         printf " Se han encontrado los siguientes tests:\n"
-        find "$(cd web/modules/custom; pwd -P)" -maxdepth 2 -iname "tests" -type d
+        find "$(cd $MODULES_CUSTOM_FOLDER; pwd -P)" -maxdepth 2 -iname "tests" -type d
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-34 [MANUAL]:${NC}\n"
@@ -561,10 +592,10 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-37 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Comprobando si Simple styleguide está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep simple_styleguide
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep simple_styleguide
         printf '\n'
         printf " Comprobando si Styleguide está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep styleguide
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep styleguide
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-38 [MANUAL]:${NC}\n"
@@ -574,7 +605,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-39 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Comprobar que los themes contribuidos están se encuentran en su última versión estable\n"
-        composer outdated 'drupal/*'
+        composer outdated 'drupal/*' --no-interaction
         printf '\n\n'
         exit_script
         ;;
@@ -847,12 +878,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-07 [AUTOMÁTICO]:${NC}\n"
-        vendor/bin/drush dd files >> files.txt
+        vendor/bin/drush dd files 2>/dev/null >> files.txt
         printf " Se comprueba que los ficheros estén en un entorno aparte (Por ejemplo Amazon S3): "
         if [[ ! -z $(grep "sites/default" "files.txt") ]]; then
           printf "${RED}[KO]${NC}"
           printf '\n'
-          printf " Los ficheros estan alojados en: $(vendor/bin/drush dd files)"
+          printf " Los ficheros estan alojados en: $(vendor/bin/drush dd files 2>/dev/null)"
         else
           printf "${GREEN}[OK]${NC}"
         fi
@@ -860,7 +891,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-08 [AUTOMÁTICO]:${NC}\n"
-        TEMP=$(vendor/bin/drush dd temp)
+        TEMP=$(vendor/bin/drush dd temp 2>/dev/null)
         printf " Se comprueba que los ficheros temporales estan en un directorio externo a Drupal: "
         if [[ "$TEMP" =~ .*"$WORKDIR".* ]]; then
           cd -P ${TEMP}
@@ -868,7 +899,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
           if [[ "$ROOTTMP" =~ .*"$WORKDIR".* ]]; then
             printf "${RED}[KO]${NC}"
             printf '\n'
-            printf " Estan alojados en: $($WORKDIR/vendor/bin/drush dd temp)"
+            printf " Estan alojados en: $($WORKDIR/vendor/bin/drush dd temp 2>/dev/null)"
           else
             printf "${GREEN}[OK]${NC}"
             printf '\n'
@@ -886,7 +917,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-10 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf " El driver de base de datos usado es: $(vendor/bin/drush core-status --field=db-driver)"
+        printf " El driver de base de datos usado es: $(vendor/bin/drush core-status --field=db-driver 2>/dev/null)"
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-11 [SEMIAUTOMÁTICO]:${NC}\n"
@@ -894,15 +925,15 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-12 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf " La versión de Drush es: $(vendor/bin/drush core-status --field=drush-version). Se recomienda el uso de Drush 11"
+        printf " La versión de Drush es: $(vendor/bin/drush core-status --field=drush-version 2>/dev/null). Se recomienda el uso de Drush 11"
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-13 [SEMIAUTOMÁTICO]:${NC}\n"
         printf "Comprobando si Redis está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep redis
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep redis
         printf '\n'
         printf "Comprobando si Memcache está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled | grep memcache
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache
         printf '\n'
         printf "CDN: "
         curl --head --silent ${PROJECT_PRO_URL} >> curl.txt
