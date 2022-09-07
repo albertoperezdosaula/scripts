@@ -969,13 +969,13 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-13 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf "Comprobando si Redis está instalado:\n"
+        printf " Comprobando si Redis está instalado:\n"
         vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep redis
         printf '\n'
-        printf "Comprobando si Memcache está instalado:\n"
+        printf " Comprobando si Memcache está instalado:\n"
         vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache
         printf '\n'
-        printf "CDN: "
+        printf " CDN:"
         curl --head --silent ${PROJECT_PRO_URL} >> curl.txt
         if [[ ! -z $(grep -i "X-Cache" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
