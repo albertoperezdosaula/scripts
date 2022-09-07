@@ -24,7 +24,14 @@ printf " Antes de lanzar el script compruebe lo siguiente:\n"
 printf "   ${BLUE}1 -${NC} Ejecutar desde PRO o un entorno clonado al de PRO.\n"
 printf "   ${BLUE}2 -${NC} Situar este script dentro de la carpeta raiz de Drupal.\n"
 printf "   ${BLUE}3 -${NC} Comprueba que tu usuario de Linux tiene permisos para escribir en la carpeta Drupal.\n"
-printf "   ${BLUE}4 -${NC} Este script asume que el proyecto está desplegado con GIT y Composer.\n\n"
+printf "   ${BLUE}4 -${NC} Este script asume que el proyecto está desplegado con GIT y Composer.\n"
+printf "   ${BLUE}5 -${NC} Añade permisos 777 al script para poder ejecutar.\n"
+printf "   ${BLUE}6 -${NC} El script permite los siguientes @parametros para lanzar las auditorias de:\n"
+printf "   ${BLUE}    *${NC} TODAS: ./drupal-website-audit.sh 1\n"
+printf "   ${BLUE}    *${NC} REV-DRUPAL: ./drupal-website-audit.sh 2\n"
+printf "   ${BLUE}    *${NC} REV-DEVOPS: ./drupal-website-audit.sh 3\n"
+printf "   ${BLUE}    *${NC} REV-INFRA: ./drupal-website-audit.sh 4\n"
+printf "   ${BLUE}    *${NC} Salir: ./drupal-website-audit.sh 5\n\n"
 # Paquetes.
 printf "${YELLOW} PAQUETES A INSTALAR ANTES DE INICIAR EL PROCESO:\n${NC}"
 printf ' 1 - jq\n'
@@ -136,24 +143,24 @@ script_configuration() {
 }
 
 exit_script() {
-  # Restores
-  rm -rf composer.json
-  rm -rf composer.lock
-  mv report-rev-composer.json.bak composer.json
-  mv report-rev-composer.lock.bak composer.lock
-  # Uninstall modules in case was already enabled.
-  # @TODO - Check if security review and upgrade status was already enabled.
-  printf " ${BLUE}Restaurando composer...${NC}"
-  vendor/bin/drush pmu security_review -y 2>/dev/null
-  vendor/bin/drush pmu upgrade_status -y 2>/dev/null
-  composer install --no-interaction -q
-  printf "${GREEN}[OK]${NC}"
-  printf "\n\n"
-  printf " ${BLUE}Limpiando caches...${NC}"
-  vendor/bin/drush cr 2>/dev/null
-  printf "${GREEN}[OK]${NC}"
-  printf "\n\n"
   if [[ -z "$1" ]]; then
+    # Restores
+    rm -rf composer.json
+    rm -rf composer.lock
+    mv report-rev-composer.json.bak composer.json
+    mv report-rev-composer.lock.bak composer.lock
+    # Uninstall modules in case was already enabled.
+    # @TODO - Check if security review and upgrade status was already enabled.
+    printf " ${BLUE}Restaurando composer...${NC}"
+    vendor/bin/drush pmu security_review -y 2>/dev/null
+    vendor/bin/drush pmu upgrade_status -y 2>/dev/null
+    composer install --no-interaction -q
+    printf "${GREEN}[OK]${NC}"
+    printf "\n\n"
+    printf " ${BLUE}Limpiando caches...${NC}"
+    vendor/bin/drush cr 2>/dev/null
+    printf "${GREEN}[OK]${NC}"
+    printf "\n\n"
     ELAPSED="$(($SECONDS / 3600))hrs $((($SECONDS / 60) % 60))min $(($SECONDS % 60))sec"
     printf " ${GREEN}[EJECUCIÓN FINALIZADA - Tiempo  de ejecución: $ELAPSED]${NC}"
   else
@@ -173,7 +180,11 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
   script_execution() {
     opt=$1
+    all=$2
     case $opt in
+      "TODAS")
+        script_execution 'REV-DRUPAL' 'all'
+        ;;
       "REV-DRUPAL")
         printf '\n'
 
@@ -626,7 +637,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf " Comprobar que los themes contribuidos están se encuentran en su última versión estable\n"
         composer outdated 'drupal/*' --no-interaction
         printf '\n\n'
-        exit_script
+
+        if [[ ! -z "$all" ]]; then
+          script_execution 'REV-DEVOPS' 'all'
+        else
+          exit_script
+        fi
         ;;
       "REV-DEVOPS")
         printf '\n'
@@ -794,7 +810,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
         fi
         rm curl.txt
         printf '\n\n'
-        exit_script
+
+        if [[ ! -z "$all" ]]; then
+          script_execution 'REV-INFRA' 'all'
+        else
+          exit_script
+        fi
         ;;
       "REV-INFRA")
         printf '\n'
@@ -966,7 +987,8 @@ if [[ ("${RESPOND}" == "y") ]]; then
         exit_script
         ;;
       "Salir")
-        exit_script
+        printf '\n\n'
+        exit_script 1
         ;;
       *) echo -e "\n\n ${RED}Opción no valida${NC}\n\n";;
     esac
@@ -976,8 +998,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
   ################### SCRIPT QUESTION/EXECUTION WITH PARAMETER #################
   ##############################################################################
   # Set initial configuration.
-  script_configuration
-  options=("REV-DRUPAL" "REV-DEVOPS" "REV-INFRA" "Salir")
+  options=("TODAS" "REV-DRUPAL" "REV-DEVOPS" "REV-INFRA" "Salir")
   if [[ -z "$1" ]]; then
     printf "\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
     printf "${YELLOW} SELECCIONA QUE TEST QUIERES EJECUTAR:${NC}\n\n"
@@ -986,12 +1007,18 @@ if [[ ("${RESPOND}" == "y") ]]; then
     do
       let VALUE_PARAM=$REPLY-1
       PARAMETER=${options[$VALUE_PARAM]}
+      if [[ "${PARAMETER}" != "Salir" ]]; then
+        script_configuration
+      fi
       # Run 'auditoria' script.
       script_execution ${PARAMETER}
     done
   else
     let VALUE_PARAM=$1-1
     PARAMETER=${options[$VALUE_PARAM]}
+    if [[ "${PARAMETER}" != "Salir" ]]; then
+      script_configuration
+    fi
     # Run 'auditoria' script.
     script_execution ${PARAMETER}
   fi
