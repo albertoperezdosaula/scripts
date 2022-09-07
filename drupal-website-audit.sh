@@ -25,8 +25,7 @@ printf "   ${BLUE}1 -${NC} Ejecutar desde PRO o un entorno clonado al de PRO.\n"
 printf "   ${BLUE}2 -${NC} Situar este script dentro de la carpeta raiz de Drupal.\n"
 printf "   ${BLUE}3 -${NC} Comprueba que tu usuario de Linux tiene permisos para escribir en la carpeta Drupal.\n"
 printf "   ${BLUE}4 -${NC} Este script asume que el proyecto está desplegado con GIT y Composer.\n"
-printf "   ${BLUE}5 -${NC} Añade permisos 777 al script para poder ejecutar.\n"
-printf "   ${BLUE}6 -${NC} El script permite los siguientes @parametros para lanzar las auditorias de:\n"
+printf "   ${BLUE}5 -${NC} El script permite los siguientes @parametros para lanzar las auditorías de:\n"
 printf "   ${BLUE}    *${NC} TODAS: ./drupal-website-audit.sh 1\n"
 printf "   ${BLUE}    *${NC} REV-DRUPAL: ./drupal-website-audit.sh 2\n"
 printf "   ${BLUE}    *${NC} REV-DEVOPS: ./drupal-website-audit.sh 3\n"
@@ -34,30 +33,30 @@ printf "   ${BLUE}    *${NC} REV-INFRA: ./drupal-website-audit.sh 4\n"
 printf "   ${BLUE}    *${NC} Salir: ./drupal-website-audit.sh 5\n\n"
 # Paquetes.
 printf "${YELLOW} PAQUETES A INSTALAR ANTES DE INICIAR EL PROCESO:\n${NC}"
-printf ' 1 - jq\n'
-printf ' 2 - phpcpd\n'
-printf ' 3 - phpcs\n'
-printf ' 4 - column\n\n'
+printf "   ${BLUE}1 -${NC} jq\n"
+printf "   ${BLUE}2 -${NC} phpcpd\n"
+printf "   ${BLUE}3 -${NC} phpcs\n"
+printf "   ${BLUE}4 -${NC} column\n\n"
 printf "${BLUE} Actualmente te faltan por instalar estos paquetes:\n${NC}"
 PACKAGES_INSTALLED=0
 if ! [ -x "$(command -v jq)" ]; then
-  printf "${RED} 1 - jq no esta installado.${NC}\n"
+  printf "${RED}   1 - jq no esta installado.${NC}\n"
   PACKAGES_INSTALLED=1
 fi
 if ! [ -x "$(command -v phpcpd)" ]; then
-  printf "${RED} 2 - phpcpd no esta installado.${NC}\n"
+  printf "${RED}   2 - phpcpd no esta installado.${NC}\n"
   PACKAGES_INSTALLED=1
 fi
 if ! [ -x "$(command -v phpcs)" ]; then
-  printf "${RED} 3 - phpcs no esta installado.${NC}\n"
+  printf "${RED}   3 - phpcs no esta installado.${NC}\n"
   PACKAGES_INSTALLED=1
 fi
 if ! [ -x "$(command -v column)" ]; then
-  printf "${RED} 4 - column no esta installado.${NC}\n"
+  printf "${RED}   4 - column no esta installado.${NC}\n"
   PACKAGES_INSTALLED=1
 fi
 if [[ "${PACKAGES_INSTALLED}" < 1 ]]; then
-  printf "${GREEN} Ninguno.${NC}\n\n"
+  printf "${GREEN}   Ninguno.${NC}\n\n"
 fi
 printf "${YELLOW}----------------------------------------------------------------------------${NC}\n\n"
 
