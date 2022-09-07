@@ -207,12 +207,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-03 [AUTOMÁTICO]:${NC}\n"
-        curl --head --silent "${PROJECT_PRO_URL}/user/login" >> curl.txt
+        curl --head --silent -m 10 "${PROJECT_PRO_URL}/user/login" >> curl.txt
         printf " Se comprueba la URL de ${PROJECT_PRO_URL}/user/login y se verifica si hacemos ping: "
         if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${PROJECT_PRO_URL}/user/login 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${PROJECT_PRO_URL}/user/login 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         else
           printf "${RED}[KO]${NC}"
@@ -226,12 +226,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-05 [SEMIAUTOMÁTICO]:${NC}\n"
-        curl --head --silent "${PROJECT_PRO_URL}/robots.txt" >> curl.txt
+        curl --head --silent -m 10 "${PROJECT_PRO_URL}/robots.txt" >> curl.txt
         printf " Se comprueba la URL de ${PROJECT_PRO_URL}/robots.txt y se verifica si hacemos ping: "
         if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${PROJECT_PRO_URL}/robots.txt 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${PROJECT_PRO_URL}/robots.txt 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}\n\n"
           printf " Por favor, revise el robots.txt para comprobar que esta configurado de forma correcta.\n\n"
           curl "${PROJECT_PRO_URL}/robots.txt"
@@ -242,12 +242,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-06 [AUTOMÁTICO]:${NC}\n"
-        curl --head --silent "${PROJECT_PRO_URL}/update.php" >> curl.txt
+        curl --head --silent -m 10 "${PROJECT_PRO_URL}/update.php" >> curl.txt
         printf " Se comprueba la URL de ${PROJECT_PRO_URL}/update.php y se verifica si hacemos ping: "
         if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${PROJECT_PRO_URL}/update.php 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${PROJECT_PRO_URL}/update.php 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         else
           printf "${RED}[KO]${NC}"
@@ -256,24 +256,24 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-07 [AUTOMÁTICO]:${NC}\n"
-        curl --head --silent "${PROJECT_PRO_URL}/cron.php" >> curl.txt
+        curl --head --silent -m 10 "${PROJECT_PRO_URL}/cron.php" >> curl.txt
         printf " Se comprueba la URL de ${PROJECT_PRO_URL}/cron.php y se verifica si hacemos ping: "
         if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${PROJECT_PRO_URL}/cron.php 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${PROJECT_PRO_URL}/cron.php 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         else
           printf "${RED}[KO]${NC}"
         fi
         rm curl.txt
         printf '\n'
-        curl --head --silent "${PROJECT_PRO_URL}/cron" >> curl.txt
+        curl --head --silent -m 10 "${PROJECT_PRO_URL}/cron" >> curl.txt
         printf " Se comprueba la URL de ${PROJECT_PRO_URL}/cron y se verifica si hacemos ping: "
         if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${PROJECT_PRO_URL}/cron 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${PROJECT_PRO_URL}/cron 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         else
           printf "${RED}[KO]${NC}"
@@ -282,12 +282,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-08 [AUTOMÁTICO]:${NC}\n"
-        curl --head --silent "${PROJECT_PRO_URL}/xmlrpc.php" >> curl.txt
+        curl --head --silent -m 10 "${PROJECT_PRO_URL}/xmlrpc.php" >> curl.txt
         printf " Se comprueba la URL de ${PROJECT_PRO_URL}/xmlrpc.php y se verifica si hacemos ping: "
         if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${PROJECT_PRO_URL}/xmlrpc.php 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${PROJECT_PRO_URL}/xmlrpc.php 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         else
           printf "${RED}[KO]${NC}"
@@ -385,12 +385,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
         mkdir -p ${PRIVATEFOLDER}
         touch ${PRIVATEFOLDER}/test.txt && echo prueba > ${PRIVATEFOLDER}/test.txt
         PRIVATEURL=${PRIVATEFOLDER/$ROOTFOLDER/}
-        curl --head --silent "${PROJECT_LOCAL_URL}${PRIVATEURL}/test.txt" >> curl.txt
+        curl --head --silent -m 10 "${PROJECT_LOCAL_URL}${PRIVATEURL}/test.txt" >> curl.txt
         printf " Se comprueba la URL de ${PROJECT_LOCAL_URL}${PRIVATEURL}/test.txt y se verifica si hacemos ping: "
         if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${PROJECT_LOCAL_URL}${PRIVATEURL}/test.txt 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${PROJECT_LOCAL_URL}${PRIVATEURL}/test.txt 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         else
           printf "${RED}[KO]${NC}"
@@ -521,7 +521,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache
         printf '\n'
         printf " CDN:"
-        curl --head --silent ${PROJECT_PRO_URL} >> curl.txt
+        curl --head --silent -m 10 ${PROJECT_PRO_URL} >> curl.txt
         if [[ ! -z $(grep -i "X-Cache" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
         else
@@ -733,14 +733,17 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DEVOPS-09 [AUTOMÁTICO]:${NC}\n"
         GITURL=$(git config --get remote.origin.url)
-        curl --head --silent ${GITURL} >> curl.txt
+        if [[ "$GITURL" == *"@"* ]]; then
+          GITURL=$(echo "$GITURL" | grep -oP '(?<=@).*?(?=:)')
+        fi
+        curl --head --silent -m 10 ${GITURL} >> curl.txt
         printf " Se comprueba la URL de ${GITURL} y se verifica si hacemos ping (Solo se debería poder con VPN): "
-        if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
-          printf "${RED}[KO]${NC}"
-        else
+        if [[ -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
+        else
+          printf "${RED}[KO]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${GITURL} 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${GITURL} 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         fi
         rm curl.txt
@@ -797,14 +800,14 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DEVOPS-21 [AUTOMÁTICO]:${NC}\n"
-        curl --head --silent ${JENKINSURL} >> curl.txt
+        curl --head --silent -m 10 ${JENKINSURL} >> curl.txt
         printf " Se comprueba la URL de ${JENKINSURL} y se verifica si hacemos ping (Solo se debería poder con VPN): "
-        if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
-          printf "${RED}[KO]${NC}"
-        else
+        if [[ -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
+        else
+          printf "${RED}[KO]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I ${JENKINSURL} 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 ${GITURL} 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         fi
         rm curl.txt
@@ -903,12 +906,12 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-06 [AUTOMÁTICO]:${NC}\n"
-        curl --head --silent "google.es" >> curl.txt
+        curl --head --silent -m 10 "google.es" >> curl.txt
         printf " Se comprueba la URL de google.es y se verifica si hacemos ping: "
         if [[ ! -z $(grep -i "Date" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
           printf '\n'
-          STATUS_CURL=$(curl -I "google.es" 2>&1 | awk '/HTTP\// {print $2}')
+          STATUS_CURL=$(curl -I -m 10 "google.es" 2>&1 | awk '/HTTP\// {print $2}')
           printf " Status de la petición: ${STATUS_CURL}"
         else
           printf "${RED}[KO]${NC}"
@@ -975,7 +978,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache
         printf '\n'
         printf " CDN:"
-        curl --head --silent ${PROJECT_PRO_URL} >> curl.txt
+        curl --head --silent -m 10 ${PROJECT_PRO_URL} >> curl.txt
         if [[ ! -z $(grep -i "X-Cache" "curl.txt") ]]; then
           printf "${GREEN}[OK]${NC}"
         else
@@ -1017,6 +1020,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
     PARAMETER=${options[$VALUE_PARAM]}
     if [[ "${PARAMETER}" != "Salir" ]]; then
       script_configuration
+      echo "a"
     fi
     # Run 'auditoria' script.
     script_execution ${PARAMETER}
