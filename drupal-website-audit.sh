@@ -65,6 +65,28 @@ MODULES_CUSTOM_FOLDER='web/modules/custom'
 ################################################################################
 ################################ SCRIPT FUNCTIONS ##############################
 ################################################################################
+
+get_final_url_pro() {
+  URL_IN=$1
+  URL_IN="${URL_IN//[$'\t\r\n ']}"
+  # Get location / redirects.
+  LOCATION=$(curl --head --silent -m 10 "$URL_IN" 2>&1 | awk '/Location:/ {print $2}')
+  LOCATION="${LOCATION//[$'\t\r\n ']}"
+  if [[ $LOCATION != "" ]]; then
+    # If location is subfolder, then take the current URL.
+    if [[ "$LOCATION" == *"http"* ]]; then
+      get_final_url_pro "$LOCATION"
+      exit;
+    else
+      LOCATION=${URL_IN}
+    fi
+  else
+    LOCATION=${URL_IN}
+  fi
+  LOCATION=${LOCATION%/}
+  echo "$LOCATION"
+}
+
 script_configuration() {
   printf "\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
   printf "${YELLOW} CONFIGURACIÓN PREVIA DEL SCRIPT DE AUDITORÍA:${NC}\n\n"
@@ -98,6 +120,8 @@ script_configuration() {
     printf " ${RED}URL de PRO/VAL es requerida!${NC}\n"
     exit 1
   fi
+  # Check if the PRO URL redirects to other URL.
+  PROJECT_PRO_URL="$(get_final_url_pro "$PROJECT_PRO_URL")"
   printf '\n'
   # Url local.
   printf " ${BLUE}URL de LOCAL:${NC}"
@@ -733,6 +757,7 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DEVOPS-09 [AUTOMÁTICO]:${NC}\n"
         GITURL=$(git config --get remote.origin.url)
+        #@TODO - This wont work with http://user:pass@.
         if [[ "$GITURL" == *"@"* ]]; then
           GITURL=$(echo "$GITURL" | grep -oP '(?<=@).*?(?=:)')
         fi
