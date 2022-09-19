@@ -157,6 +157,9 @@ script_configuration() {
   # Composer allow plugins
   cp composer.json report-rev-composer.json.bak
   cp composer.lock report-rev-composer.lock.bak
+  if [[ -f "report-rev-installed-modules.txt" ]];then
+    rm -rf report-rev-installed-modules.txt
+  fi
   composer config --no-plugins allow-plugins.composer/installers true
   composer config --no-plugins allow-plugins.cweagans/composer-patches true
   composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
@@ -172,6 +175,7 @@ exit_script() {
     rm -rf composer.lock
     mv report-rev-composer.json.bak composer.json
     mv report-rev-composer.lock.bak composer.lock
+    rm -rf report-rev-installed-modules.txt
     # Uninstall modules in case was already enabled.
     # @TODO - Check if security review and upgrade status was already enabled.
     printf " ${BLUE}Restaurando composer...${NC}"
@@ -348,11 +352,18 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-12 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " ${BLUE}Instalando y activando security_review...${NC}\n\n"
-        composer require drupal/security_review --no-interaction -q
-        vendor/bin/drush en security_review -y 2>/dev/null
-        vendor/bin/drush cr 2>/dev/null
-        printf " A continuación se van a mostrar los siguientes reportes con security_review:\n"
-        vendor/bin/drush secrev --skip=query_errors --results 2>/dev/null
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep security_review >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "security_review" "report-rev-installed-modules.txt") ]]; then
+          printf " A continuación se van a mostrar los siguientes reportes con security_review:\n"
+          vendor/bin/drush secrev --skip=query_errors --results 2>/dev/null
+        else
+          composer require drupal/security_review --no-interaction -q
+          vendor/bin/drush en security_review -y 2>/dev/null
+          vendor/bin/drush cr 2>/dev/null
+          printf " A continuación se van a mostrar los siguientes reportes con security_review:\n"
+          vendor/bin/drush secrev --skip=query_errors --results 2>/dev/null
+          vendor/bin/drush pmu security_review -y 2>/dev/null
+        fi
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-13 [AUTOMÁTICO]:${NC}\n"
@@ -373,11 +384,21 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-14 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf " Comprobando si Antibot está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep antibot
+        printf " Comprobando si Antibot está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep antibot >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "antibot" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
-        printf " Comprobando si Captcha está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep captcha
+        printf " Comprobando si Captcha está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep captcha >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "captcha" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n\n'
         printf " Acceda a la página web ${PROJECT_PRO_URL} y navega en busca de algún formulario para comprobar si existe captcha."
 
@@ -447,11 +468,21 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-19 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf " Comprobando si Elastic search está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep elasticsearch_connector
+        printf " Comprobando si Elastic search está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep elasticsearch_connector >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "elasticsearch_connector" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
-        printf " Comprobando Search API Solr está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep search_api_solr
+        printf " Comprobando Search API Solr está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep search_api_solr >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "search_api_solr" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-20 [AUTOMÁTICO]:${NC}\n"
@@ -538,11 +569,21 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-25 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf " Comprobando si Redis está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep redis
+        printf " Comprobando si Redis está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep redis >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "redis" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
-        printf " Comprobando si Memcache está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache
+        printf " Comprobando si Memcache está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "memcache" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
         printf " CDN:"
         curl --head --silent -m 10 ${PROJECT_PRO_URL} >> curl.txt
@@ -573,30 +614,59 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-29 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Se han encontrado los siguientes módulos que no deberían estar habilitados en PRO:\n"
-        printf "Comprobando si Views UI está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep views_ui
+        printf " Comprobando si Views UI está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep views_ui >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "views_ui" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
-        printf "Comprobando si Webform UI está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep webform_ui
+        printf " Comprobando si Webform UI está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep webform_ui >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "webform_ui" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
-        printf "Comprobando si Watchdog está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep watchdog
+        printf " Comprobando si Watchdog está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep watchdog >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "watchdog" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
-        printf "Comprobando si Page Manager UI está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep page_manager_ui
-        printf '\n'
+        printf " Comprobando si Page Manager UI está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep page_manager_ui >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "page_manager_ui" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
+        printf '\n\n'
         printf " Se han encontrado los siguientes módulos contribuidos que estan deshabilitados (Revisar si se podrían eliminar):\n"
         vendor/bin/drush pm:list --type=module --no-core --status=disabled 2>/dev/null
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-30 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " ${BLUE}Instalando y activando upgrade_status...${NC}\n\n"
-        composer require drupal/upgrade_status:^3.1 -W --no-interaction -q
-        vendor/bin/drush en upgrade_status -y 2>/dev/null
-        vendor/bin/drush cr 2>/dev/null
-        printf " A continuación se van a mostrar las siguientes funciones deprecadas en los módulos custom:\n"
-        vendor/bin/drush us-a --all --ignore-contrib --skip-existing 2>/dev/null > report-rev-drupal-30.txt
-        cat report-rev-drupal-30.txt | awk 'NR<=30'
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep upgrade_status >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "upgrade_status" "report-rev-installed-modules.txt") ]]; then
+          printf " A continuación se van a mostrar las siguientes funciones deprecadas en los módulos custom:\n"
+          vendor/bin/drush us-a --all --ignore-contrib --skip-existing 2>/dev/null > report-rev-drupal-30.txt
+          cat report-rev-drupal-30.txt | awk 'NR<=30'
+        else
+          composer require drupal/upgrade_status:^3.1 -W --no-interaction -q
+          vendor/bin/drush en upgrade_status -y 2>/dev/null
+          vendor/bin/drush cr 2>/dev/null
+          printf " A continuación se van a mostrar las siguientes funciones deprecadas en los módulos custom:\n"
+          vendor/bin/drush us-a --all --ignore-contrib --skip-existing 2>/dev/null > report-rev-drupal-30.txt
+          cat report-rev-drupal-30.txt | awk 'NR<=30'
+          vendor/bin/drush pmu upgrade_status -y 2>/dev/null
+        fi
+
         printf '\n\n'
         printf " Se ha generado un reporte completo en el fichero ${WORKDIR}/report-rev-drupal-30.txt"
 
@@ -644,11 +714,21 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-37 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf " Comprobando si Simple styleguide está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep simple_styleguide
+        printf " Comprobando si Simple styleguide está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep simple_styleguide >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "simple_styleguide" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
-        printf " Comprobando si Styleguide está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep styleguide
+        printf " Comprobando si Styleguide está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep styleguide >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "styleguide" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-DRUPAL-38 [MANUAL]:${NC}\n"
@@ -659,6 +739,21 @@ if [[ ("${RESPOND}" == "y") ]]; then
         printf "${YELLOW} REV-DRUPAL-39 [SEMIAUTOMÁTICO]:${NC}\n"
         printf " Comprobar que los themes contribuidos están se encuentran en su última versión estable\n"
         composer outdated 'drupal/*' --no-interaction
+        printf '\n\n'
+
+        printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
+        printf "${YELLOW} REV-DRUPAL-40 [AUTOMÁTICO]:${NC}\n"
+        printf " Comprobar que los módulos contribuidos no están modificados a mano\n"
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep hacked >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "hacked" "report-rev-installed-modules.txt") ]]; then
+          vendor/bin/drush hlp
+        else
+          composer require drupal/hacked --no-interaction -q
+          vendor/bin/drush en hacked -y 2>/dev/null
+          vendor/bin/drush cr 2>/dev/null
+          vendor/bin/drush hlp
+          vendor/bin/drush pmu hacked -y 2>/dev/null
+        fi
         printf '\n\n'
 
         if [[ ! -z "$all" ]]; then
@@ -996,11 +1091,21 @@ if [[ ("${RESPOND}" == "y") ]]; then
 
         printf "\n\n${YELLOW}----------------------------------------------------------------------------${NC}\n"
         printf "${YELLOW} REV-INFRA-13 [SEMIAUTOMÁTICO]:${NC}\n"
-        printf " Comprobando si Redis está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep redis
+        printf " Comprobando si Redis está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep redis >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "redis" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
-        printf " Comprobando si Memcache está instalado:\n"
-        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache
+        printf " Comprobando si Memcache está instalado: "
+        vendor/bin/drush pm:list --type=module --status=enabled 2>/dev/null | grep memcache >> report-rev-installed-modules.txt
+        if [[ ! -z $(grep -i "memcache" "report-rev-installed-modules.txt") ]]; then
+          printf "${GREEN}[INSTALADO]${NC}"
+        else
+          printf "${RED}[NO INSTALADO]${NC}"
+        fi
         printf '\n'
         printf " CDN:"
         curl --head --silent -m 10 ${PROJECT_PRO_URL} >> curl.txt
