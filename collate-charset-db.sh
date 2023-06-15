@@ -16,7 +16,7 @@ echo -e "${BLUE}#########                                       ########${NC}\r"
 echo -e "${BLUE}########################################################${NC}\n"
 # Instrucciones.
 printf "${YELLOW} INSTRUCCIONES ANTES DE EMPEZAR:\n${NC}"
-printf " Dicho script permite cambiar el collate y charset de la BD.\n\n"
+printf " Dicho script permite cambiar el collate y charset de la SQL a importar en BD.\n\n"
 printf " Antes de lanzar el script compruebe lo siguiente:\n"
 printf "   ${BLUE}1 -${NC} Situar el script en la misma carpeta que la .SQL.\n"
 
